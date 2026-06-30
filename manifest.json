@@ -2,7 +2,7 @@
   "name": "Info Gempa Bumi",
   "short_name": "Info Gempa",
   "description": "Aplikasi Peringatan Dini Gempa Bumi",
-  "start_url": "/infogempa/index.php",
+  "start_url": "./index.php",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#212529",
