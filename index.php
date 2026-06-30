@@ -52,8 +52,18 @@
                 </div>
             </div>
         </nav>
+
+        <div class="sticky-top" style="top: 56px; z-index: 1020;" id="notif-banner-wrapper">
+            <div class="alert alert-info shadow-sm mb-0 rounded-0 border-0 d-none flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start" role="alert" id="notif-banner">
+                <div id="notif-text">
+                    <i class="bi bi-bell-fill me-2"></i> Aktifkan notifikasi untuk menerima peringatan instan saat terjadi gempa bumi.
+                </div>
+                <button id="notif-btn" onclick="enableNotif()" class="btn btn-primary btn-sm text-nowrap"><i class="bi bi-bell-fill"></i> Aktifkan Notifikasi</button>
+            </div>
+        </div>
+
         <!-- Header-->
-        <header class="py-5">
+        <header class="py-5 mt-4">
             <div class="container px-lg-5">
                 <p style="margin-top:20px;"><b> *Data diambil dari website resmi BMKG </b></p>
                 <div class="p-4 p-lg-5 bg-light rounded-3 text-center" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);">
@@ -69,9 +79,8 @@
                     </div>
                 </div>
                 <br/>
-                <p>Klik dibawah ini untuk memperbaharui data atau test notifikasi</p>
+                <p>Klik dibawah ini untuk memperbaharui data</p>
                 <a onclick="dataGempaAuto()" class="btn btn-warning btn-lg" title="Refresh Data"><i class="bi bi-arrow-repeat"></i></a>
-                <a onclick="testNotif()" class="btn btn-danger btn-lg ms-2" title="Test Alarm & Notifikasi"><i class="bi bi-bell"></i> Test Notif</a>
                 
             </div>
         </header>
@@ -281,31 +290,21 @@ let lastWaktuGempa = null;
 let userLat = null;
 let userLng = null;
 
-function testNotif() {
+function enableNotif() {
     if ("Notification" in window) {
         Notification.requestPermission().then(function (permission) {
             if (permission === "granted") {
-                playAlarm();
-                const content = document.getElementById('content');
-                let notifBody = "Ini adalah notifikasi percobaan. Semuanya berfungsi dengan baik!";
-                let notifTitle = "Test Peringatan Gempa!";
-                
-                if (content) {
-                    const waktu = content.getAttribute('data-waktu');
-                    const mag = content.getAttribute('data-mag');
-                    const wilayah = content.getAttribute('data-wilayah');
-                    if (waktu && mag && wilayah) {
-                        notifTitle = `Peringatan Dini Gempa M${mag}`;
-                        notifBody = `Telah terjadi gempa pada ${waktu} di wilayah ${wilayah}. (Sample Notifikasi)`;
-                    }
-                }
-                
-                new Notification(notifTitle, {
-                    body: notifBody,
+                new Notification("Notifikasi Aktif!", {
+                    body: "Push notif sudah diaktifkan. Anda akan menerima notif jika ada update informasi gempa.",
                     icon: "assets/icon-192.png"
                 });
+                const banner = document.getElementById('notif-banner');
+                if (banner) {
+                    banner.classList.remove('d-flex');
+                    banner.classList.add('d-none');
+                }
             } else {
-                alert("Izin notifikasi belum diberikan. Silakan klik ikon gembok (lock) di address bar browser Anda, dan izinkan Notifikasi (Notifications).");
+                alert("Izin notifikasi ditolak. Silakan izinkan melalui pengaturan browser (ikon gembok di sebelah URL).");
             }
         });
     } else {
@@ -313,10 +312,28 @@ function testNotif() {
     }
 }
 
-// Request permission automatically if not denied (some browsers allow this without user gesture, but testNotif() covers the rest)
-if ("Notification" in window && Notification.permission !== "denied" && Notification.permission !== "granted") {
-    Notification.requestPermission();
-}
+// Check notification permission on load to toggle banner visibility
+window.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('notif-banner');
+    if (!banner) return;
+    
+    if (window.isSecureContext === false || !("Notification" in window)) {
+        // Not secure or not supported
+        document.getElementById('notif-text').innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> <span class="text-danger">Notifikasi diblokir browser karena koneksi tidak aman (Bukan HTTPS/Localhost).</span>';
+        document.getElementById('notif-btn').style.display = 'none';
+        banner.classList.remove('d-none');
+        banner.classList.add('d-flex');
+    } else if (Notification.permission === "default") {
+        // Needs permission
+        banner.classList.remove('d-none');
+        banner.classList.add('d-flex');
+    } else {
+        // Granted or Denied (Hide banner)
+        banner.classList.remove('d-flex');
+        banner.classList.add('d-none');
+    }
+});
+
 if (window.isSecureContext === false) {
     console.warn("Aplikasi diakses dari koneksi tidak aman (bukan HTTPS/localhost). Fitur Geolokasi mungkin diblokir oleh browser.");
 }
