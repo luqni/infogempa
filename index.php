@@ -39,7 +39,7 @@
     </style>
     <body style="padding-top: 56px;">
         <!-- Responsive navbar-->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);position: fixed;width:100%;z-index:1030;">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); z-index: 1030;">
             <div class="container px-lg-5">
                 <a class="navbar-brand" href="index.php">Info Gempa Bumi</a>
                 <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button> -->
@@ -292,21 +292,39 @@ let userLng = null;
 
 function enableNotif() {
     if ("Notification" in window) {
-        Notification.requestPermission().then(function (permission) {
-            if (permission === "granted") {
-                new Notification("Notifikasi Aktif!", {
-                    body: "Push notif sudah diaktifkan. Anda akan menerima notif jika ada update informasi gempa.",
-                    icon: "assets/icon-192.png"
-                });
-                const banner = document.getElementById('notif-banner');
-                if (banner) {
-                    banner.classList.remove('d-flex');
-                    banner.classList.add('d-none');
+        if (Notification.permission === "granted") {
+            const content = document.getElementById('content');
+            let notifBody = "Ini adalah notifikasi percobaan. Semuanya berfungsi dengan baik!";
+            let notifTitle = "Test Peringatan Gempa!";
+            
+            if (content) {
+                const waktu = content.getAttribute('data-waktu');
+                const mag = content.getAttribute('data-mag');
+                const wilayah = content.getAttribute('data-wilayah');
+                if (waktu && mag && wilayah) {
+                    notifTitle = `Peringatan Dini Gempa M${mag}`;
+                    notifBody = `Telah terjadi gempa pada ${waktu} di wilayah ${wilayah}. (Sample Notifikasi)`;
                 }
-            } else {
-                alert("Izin notifikasi ditolak. Silakan izinkan melalui pengaturan browser (ikon gembok di sebelah URL).");
             }
-        });
+            
+            new Notification(notifTitle, {
+                body: notifBody,
+                icon: "assets/icon-192.png"
+            });
+        } else {
+            Notification.requestPermission().then(function (permission) {
+                if (permission === "granted") {
+                    new Notification("Notifikasi Aktif!", {
+                        body: "Push notif sudah diaktifkan. Anda akan menerima notif jika ada update informasi gempa.",
+                        icon: "assets/icon-192.png"
+                    });
+                    const btn = document.getElementById('notif-btn');
+                    if (btn) btn.innerHTML = '<i class="bi bi-bell"></i> Test Notif';
+                } else {
+                    alert("Izin notifikasi ditolak. Silakan izinkan melalui pengaturan browser (ikon gembok di sebelah URL).");
+                }
+            });
+        }
     } else {
         alert("Browser Anda tidak mendukung fitur Notifikasi.");
     }
@@ -327,10 +345,17 @@ window.addEventListener('DOMContentLoaded', () => {
         // Needs permission
         banner.classList.remove('d-none');
         banner.classList.add('d-flex');
+    } else if (Notification.permission === "granted") {
+        // Granted, keep banner but change button text
+        document.getElementById('notif-btn').innerHTML = '<i class="bi bi-bell"></i> Test Notif';
+        banner.classList.remove('d-none');
+        banner.classList.add('d-flex');
     } else {
-        // Granted or Denied (Hide banner)
-        banner.classList.remove('d-flex');
-        banner.classList.add('d-none');
+        // Denied
+        document.getElementById('notif-text').innerHTML = '<i class="bi bi-x-circle-fill text-danger me-2"></i> <span class="text-danger">Anda menolak izin notifikasi. Silakan buka pengaturan browser jika ingin mengaktifkan peringatan gempa.</span>';
+        document.getElementById('notif-btn').style.display = 'none';
+        banner.classList.remove('d-none');
+        banner.classList.add('d-flex');
     }
 });
 
