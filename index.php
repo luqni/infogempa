@@ -172,6 +172,23 @@
                 <!-- </div> -->
             </div>
         </section>
+        
+        <!-- Install PWA Popup -->
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="installPopup" aria-labelledby="installPopupLabel" style="height: auto;">
+            <div class="offcanvas-header pb-1">
+                <h5 class="offcanvas-title fw-bold" id="installPopupLabel">
+                    <i class="bi bi-phone-vibrate"></i> Install Info Gempa
+                </h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body small pt-2">
+                Install aplikasi ini di layar utama (Home Screen) Anda untuk akses darurat yang lebih cepat.
+                <div class="mt-3">
+                    <button class="btn btn-primary w-100 fw-bold" id="btnInstallApp">Install Sekarang</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer-->
         <footer class="py-5 bg-dark">
             <div class="container"><p class="m-0 text-center text-white">Developed by M Luqni Baehaqi &copy; 2023 - 2026</p></div>
@@ -410,4 +427,33 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// PWA Install Prompt Logic
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const installPopup = new bootstrap.Offcanvas(document.getElementById('installPopup'));
+    installPopup.show();
+});
+
+const btnInstallApp = document.getElementById('btnInstallApp');
+if(btnInstallApp) {
+    btnInstallApp.addEventListener('click', async () => {
+        const installPopupEl = document.getElementById('installPopup');
+        const installPopup = bootstrap.Offcanvas.getInstance(installPopupEl);
+        if(installPopup) installPopup.hide();
+        
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+        }
+    });
+}
+
+window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+});
 </script>
