@@ -297,10 +297,30 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
   var d = R * c; 
   return d;
+
+
 }
 
 function deg2rad(deg) {
   return deg * (Math.PI/180)
+}
+
+<?php
+$vapidJson = @file_get_contents(__DIR__ . '/api/vapid_keys.json');
+$vapidKeys = $vapidJson ? json_decode($vapidJson, true) : null;
+$vapidPublicKey = $vapidKeys ? $vapidKeys['publicKey'] : '';
+?>
+const vapidPublicKey = '<?php echo $vapidPublicKey; ?>';
+
+function urlB64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }
 
 let lastWaktuGempa = null;
@@ -317,6 +337,36 @@ function displayNotification(title, options) {
         });
     } else {
         new Notification(title, options);
+    }
+}
+
+function subscribeUserToPush(showPopup = true) {
+    if ('serviceWorker' in navigator && vapidPublicKey) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
+            })
+            .then(function(subscription) {
+                fetch('api/subscribe.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                }).then(res => res.json()).catch(err => console.error(err));
+                  
+                if (showPopup) {
+                    displayNotification("Notifikasi Aktif!", {
+                        body: "Push notif latar belakang sudah diaktifkan. Anda akan menerima peringatan meskipun aplikasi ditutup.",
+                        icon: "assets/icon-192.png"
+                    });
+                }
+                const btn = document.getElementById('notif-btn');
+                if (btn) btn.innerHTML = '<i class="bi bi-bell"></i> Test Notif';
+            })
+            .catch(function(err) {
+                console.log('Failed to subscribe the user: ', err);
+            });
+        });
     }
 }
 
@@ -344,12 +394,7 @@ function enableNotif() {
         } else {
             Notification.requestPermission().then(function (permission) {
                 if (permission === "granted") {
-                    displayNotification("Notifikasi Aktif!", {
-                        body: "Push notif sudah diaktifkan. Anda akan menerima notif jika ada update informasi gempa.",
-                        icon: "assets/icon-192.png"
-                    });
-                    const btn = document.getElementById('notif-btn');
-                    if (btn) btn.innerHTML = '<i class="bi bi-bell"></i> Test Notif';
+                    subscribeUserToPush(true);
                 } else {
                     alert("Izin notifikasi ditolak. Silakan izinkan melalui pengaturan browser (ikon gembok di sebelah URL).");
                 }
@@ -380,6 +425,15 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('notif-btn').innerHTML = '<i class="bi bi-bell"></i> Test Notif';
         banner.classList.remove('d-none');
         banner.classList.add('d-flex');
+        
+        // Auto-subscribe if not yet subscribed
+        if ('serviceWorker' in navigator && vapidPublicKey) {
+            navigator.serviceWorker.ready.then(function(registration) {
+                registration.pushManager.getSubscription().then(function(sub) {
+                    if (sub === null) subscribeUserToPush(false);
+                });
+            });
+        }
     } else {
         // Denied
         document.getElementById('notif-text').innerHTML = '<i class="bi bi-x-circle-fill text-danger me-2"></i> <span class="text-danger">Anda menolak izin notifikasi. Silakan buka pengaturan browser jika ingin mengaktifkan peringatan gempa.</span>';

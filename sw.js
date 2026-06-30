@@ -28,3 +28,38 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
+// Dengarkan event 'push' dari server backend
+self.addEventListener('push', function(event) {
+    if (event.data) {
+        const payload = event.data.json();
+        const options = {
+            body: payload.body,
+            icon: payload.icon || 'assets/icon-192.png',
+            vibrate: [200, 100, 200, 100, 200, 100, 200],
+            data: { url: payload.url || '/' }
+        };
+        
+        event.waitUntil(
+            self.registration.showNotification(payload.title, options)
+        );
+    }
+});
+
+// Tangani saat pengguna mengklik notifikasi (buka aplikasi)
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window' }).then(windowClients => {
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if (client.url.indexOf('/') !== -1 && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow('/');
+            }
+        })
+    );
+});
