@@ -37,7 +37,7 @@
 
         /* css ini di buat oleh caksup */
     </style>
-    <body>
+    <body style="padding-top: 56px;">
         <!-- Responsive navbar-->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);position: fixed;width:100%;z-index:1030;">
             <div class="container px-lg-5">
@@ -63,7 +63,7 @@
         </div>
 
         <!-- Header-->
-        <header class="py-5 mt-4">
+        <header class="py-4">
             <div class="container px-lg-5">
                 <p style="margin-top:20px;"><b> *Data diambil dari website resmi BMKG </b></p>
                 <div class="p-4 p-lg-5 bg-light rounded-3 text-center" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);">
