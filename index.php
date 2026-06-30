@@ -237,7 +237,7 @@ function dataGempaAuto() {
                 if(lastWaktuGempa !== null && lastWaktuGempa !== waktu) {
                     playAlarm();
                     if (Notification.permission === "granted") {
-                        new Notification("Peringatan Gempa Baru!", {
+                        displayNotification("Peringatan Gempa Baru!", {
                             body: `Gempa M${mag} terdeteksi! Waktu: ${waktu}`,
                             icon: "assets/icon-192.png"
                         });
@@ -307,6 +307,19 @@ let lastWaktuGempa = null;
 let userLat = null;
 let userLng = null;
 
+// Helper untuk memunculkan notifikasi (Wajib pakai Service Worker di Android Chrome)
+function displayNotification(title, options) {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            registration.showNotification(title, options);
+        }).catch(function() {
+            new Notification(title, options);
+        });
+    } else {
+        new Notification(title, options);
+    }
+}
+
 function enableNotif() {
     if ("Notification" in window) {
         if (Notification.permission === "granted") {
@@ -324,14 +337,14 @@ function enableNotif() {
                 }
             }
             
-            new Notification(notifTitle, {
+            displayNotification(notifTitle, {
                 body: notifBody,
                 icon: "assets/icon-192.png"
             });
         } else {
             Notification.requestPermission().then(function (permission) {
                 if (permission === "granted") {
-                    new Notification("Notifikasi Aktif!", {
+                    displayNotification("Notifikasi Aktif!", {
                         body: "Push notif sudah diaktifkan. Anda akan menerima notif jika ada update informasi gempa.",
                         icon: "assets/icon-192.png"
                     });
