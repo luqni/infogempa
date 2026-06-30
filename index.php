@@ -294,8 +294,8 @@ function enableNotif() {
     if ("Notification" in window) {
         if (Notification.permission === "granted") {
             const content = document.getElementById('content');
-            let notifBody = "Ini adalah notifikasi percobaan. Semuanya berfungsi dengan baik!";
-            let notifTitle = "Test Peringatan Gempa!";
+            let notifBody = "Mendapatkan data gempa terbaru dari server BMKG...";
+            let notifTitle = "Informasi Gempa Bumi";
             
             if (content) {
                 const waktu = content.getAttribute('data-waktu');
@@ -303,7 +303,7 @@ function enableNotif() {
                 const wilayah = content.getAttribute('data-wilayah');
                 if (waktu && mag && wilayah) {
                     notifTitle = `Peringatan Dini Gempa M${mag}`;
-                    notifBody = `Telah terjadi gempa pada ${waktu} di wilayah ${wilayah}. (Sample Notifikasi)`;
+                    notifBody = `Telah terjadi gempa pada ${waktu} di wilayah ${wilayah}.`;
                 }
             }
             
