@@ -21,7 +21,12 @@ include 'helper/helper.php';
 
   // print_r(json_encode($gempa));
 
-  echo "<div id='content'>";
+  $koordinat = (string)$data->gempa->point->coordinates;
+  $datetime = (string)$data->gempa->DateTime;
+  $magnitude = (string)$data->gempa->Magnitude;
+  $wilayah = (string)$data->gempa->Wilayah;
+
+  echo "<div id='content' data-koordinat='" . $koordinat . "' data-waktu='" . $datetime . "' data-mag='" . $magnitude . "' data-wilayah='" . htmlspecialchars($wilayah, ENT_QUOTES) . "'>";
   echo "<h5> Terjadi gempa pada hari <b>" .  getDisplayDateTime((string)$data->gempa->DateTime) . "</b></h5>";
   echo "<br><img style='box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);' id='gambar' class='img-fluid' src=\"https://data.bmkg.go.id/DataMKG/TEWS/" . $data->gempa->Shakemap . "\" alt=\"Gempabumi Terbaru\">";
   echo "<h5><br> Magnitudo : <b>" . $data->gempa->Magnitude . "</b> dengan Kedalaman : <b>" . $data->gempa->Kedalaman . "</b></h5>";

@@ -14,6 +14,8 @@
         <link href="assets/css/styles.css" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/dataTables.bootstrap.min.css">
 	    <!-- <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.1.0/css/responsive.bootstrap.min.css"> -->
+        <link rel="manifest" href="manifest.json">
+        <meta name="theme-color" content="#212529">
     </head>
     <style>
         /* CSS Kedip | Teks | Objek 
@@ -37,7 +39,7 @@
     </style>
     <body>
         <!-- Responsive navbar-->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);position: fixed;width:100%">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);position: fixed;width:100%;z-index:1030;">
             <div class="container px-lg-5">
                 <a class="navbar-brand" href="index.php">Info Gempa Bumi</a>
                 <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button> -->
@@ -67,7 +69,9 @@
                     </div>
                 </div>
                 <br/>
-                <p>Klik dibawah ini untuk memperbaharui data</p><a onclick="dataGempaAuto()" class="btn btn-warning btn-lg"><i class="bi bi-arrow-repeat"></i></a>
+                <p>Klik dibawah ini untuk memperbaharui data atau test notifikasi</p>
+                <a onclick="dataGempaAuto()" class="btn btn-warning btn-lg" title="Refresh Data"><i class="bi bi-arrow-repeat"></i></a>
+                <a onclick="testNotif()" class="btn btn-danger btn-lg ms-2" title="Test Alarm & Notifikasi"><i class="bi bi-bell"></i> Test Notif</a>
                 
             </div>
         </header>
@@ -199,6 +203,23 @@ function dataGempaAuto() {
     success: function(html){
         if(html){
             document.getElementById("p1").innerHTML = html;
+            
+            const content = document.getElementById('content');
+            if(content) {
+                const waktu = content.getAttribute('data-waktu');
+                const mag = content.getAttribute('data-mag');
+                if(lastWaktuGempa !== null && lastWaktuGempa !== waktu) {
+                    playAlarm();
+                    if (Notification.permission === "granted") {
+                        new Notification("Peringatan Gempa Baru!", {
+                            body: `Gempa M${mag} terdeteksi! Waktu: ${waktu}`,
+                            icon: "assets/icon-192.png"
+                        });
+                    }
+                }
+                lastWaktuGempa = waktu;
+                updateDistanceUI();
+            }
         }
     }
     });
@@ -218,4 +239,133 @@ function dataGempaTerkini() {
     });
 }
 
+// Web Audio API beep
+function playAlarm() {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + 0.5);
+    
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+    
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 1);
+}
+
+// Distance calculation
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2-lat1); 
+  var dLon = deg2rad(lon2-lon1); 
+  var a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  var d = R * c; 
+  return d;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI/180)
+}
+
+let lastWaktuGempa = null;
+let userLat = null;
+let userLng = null;
+
+function testNotif() {
+    if ("Notification" in window) {
+        Notification.requestPermission().then(function (permission) {
+            if (permission === "granted") {
+                playAlarm();
+                const content = document.getElementById('content');
+                let notifBody = "Ini adalah notifikasi percobaan. Semuanya berfungsi dengan baik!";
+                let notifTitle = "Test Peringatan Gempa!";
+                
+                if (content) {
+                    const waktu = content.getAttribute('data-waktu');
+                    const mag = content.getAttribute('data-mag');
+                    const wilayah = content.getAttribute('data-wilayah');
+                    if (waktu && mag && wilayah) {
+                        notifTitle = `Peringatan Dini Gempa M${mag}`;
+                        notifBody = `Telah terjadi gempa pada ${waktu} di wilayah ${wilayah}. (Sample Notifikasi)`;
+                    }
+                }
+                
+                new Notification(notifTitle, {
+                    body: notifBody,
+                    icon: "assets/icon-192.png"
+                });
+            } else {
+                alert("Izin notifikasi belum diberikan. Silakan klik ikon gembok (lock) di address bar browser Anda, dan izinkan Notifikasi (Notifications).");
+            }
+        });
+    } else {
+        alert("Browser Anda tidak mendukung fitur Notifikasi.");
+    }
+}
+
+// Request permission automatically if not denied (some browsers allow this without user gesture, but testNotif() covers the rest)
+if ("Notification" in window && Notification.permission !== "denied" && Notification.permission !== "granted") {
+    Notification.requestPermission();
+}
+if (window.isSecureContext === false) {
+    console.warn("Aplikasi diakses dari koneksi tidak aman (bukan HTTPS/localhost). Fitur Geolokasi mungkin diblokir oleh browser.");
+}
+
+if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            userLat = position.coords.latitude;
+            userLng = position.coords.longitude;
+            updateDistanceUI();
+        },
+        function(error) {
+            console.warn("Geolocation error: " + error.message);
+        }
+    );
+}
+
+function updateDistanceUI() {
+    const content = document.getElementById('content');
+    if(content && userLat && userLng) {
+        const coordsStr = content.getAttribute('data-koordinat');
+        if(coordsStr) {
+            const parts = coordsStr.split(',');
+            if(parts.length === 2) {
+                const gempaLat = parseFloat(parts[0]);
+                const gempaLng = parseFloat(parts[1]);
+                const dist = getDistanceFromLatLonInKm(userLat, userLng, gempaLat, gempaLng);
+                
+                let distEl = document.getElementById('jarak-gempa');
+                if(!distEl) {
+                    distEl = document.createElement('h5');
+                    distEl.id = 'jarak-gempa';
+                    distEl.style.color = '#dc3545';
+                    content.appendChild(distEl);
+                }
+                distEl.innerHTML = `Jarak dari lokasi Anda: <b>${dist.toFixed(2)} Km</b>`;
+            }
+        }
+    }
+}
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(registration => {
+      console.log('SW registered: ', registration);
+    }).catch(registrationError => {
+      console.log('SW registration failed: ', registrationError);
+    });
+  });
+}
 </script>
